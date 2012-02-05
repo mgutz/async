@@ -400,6 +400,43 @@ exports['series object'] = function(test){
     });
 };
 
+exports['series object with results'] = function(test){
+    var call_order = [];
+    async.series({
+        one: function(callback){
+            setTimeout(function(){
+                call_order.push(1);
+                callback(null, 1);
+            }, 25);
+        },
+        two: function(callback, results){
+            test.equals(results.one, 1);
+            setTimeout(function(){
+                call_order.push(2);
+                callback(null, 2);
+            }, 50);
+        },
+        three: function(callback, results){
+            test.equals(results.one, 1);
+            test.equals(results.two, 2);
+            setTimeout(function(){
+                call_order.push(3);
+                callback(null, 3,3);
+            }, 15);
+        }
+    },
+    function(err, results){
+        test.equals(err, null);
+        test.same(results, {
+            one: 1,
+            two: 2,
+            three: [3,3]
+        });
+        test.same(call_order, [1,2,3]);
+        test.done();
+    });
+};
+
 exports['iterator'] = function(test){
     var call_order = [];
     var iterator = async.iterator([
@@ -595,7 +632,7 @@ exports['forEachLimit error'] = function(test){
     test.expect(2);
     var arr = [0,1,2,3,4,5,6,7,8,9];
     var call_order = [];
-    
+
     async.forEachLimit(arr, 3, function(x, callback){
         call_order.push(x);
         if (x === 2) {
@@ -1064,7 +1101,8 @@ exports['nextTick in the browser'] = function(test){
     setTimeout(test.done, 100);
 };
 
-exports['noConflict - node only'] = function(test){
+var skip = {};
+skip['noConflict - node only'] = function(test){
     if (typeof process !== 'undefined') {
         // node only test
         test.expect(3);
